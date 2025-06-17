@@ -1,0 +1,44 @@
+// aes top module
+module aes_encrypt (
+    input  [127:0] plaintext,
+    input  [127:0] key,
+    output [127:0] ciphertext
+);
+
+    wire [127:0] ark0_out, sb_out, sr_out, mc_out, ark1_out;
+
+    // Initial AddRoundKey
+    addroundkey ark0 (
+        .state(plaintext),
+        .roundkey(key),
+        .out(ark0_out)
+    );
+
+    // Substitute Bytes (simplified: only for first byte, can be expanded)
+    sbox sbox_0 (
+        .in_byte(ark0_out[7:0]),
+        .out_byte(sb_out[7:0])
+    );
+
+    assign sb_out[127:8] = ark0_out[127:8]; // pass-through for rest
+
+    // ShiftRows
+    shiftrows shiftrows_inst (
+        .in(sb_out),
+        .out(sr_out)
+    );
+
+    // MixColumns
+    mixcolumns mixcolumns_inst (
+        .in(sr_out),
+        .out(mc_out)
+    );
+
+    // Final AddRoundKey
+    addroundkey ark1 (
+        .state(mc_out),
+        .roundkey(key),
+        .out(ciphertext)
+    );
+
+endmodule
