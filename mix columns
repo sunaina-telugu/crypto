@@ -1,0 +1,33 @@
+module mixcolumns (
+    input  [127:0] in,
+    output [127:0] out
+);
+
+    function [7:0] xtime;
+        input [7:0] b;
+        xtime = {b[6:0], 1'b0} ^ (8'h1B & {8{b[7]}});
+    endfunction
+
+    function [7:0] mul_by_3;
+        input [7:0] b;
+        mul_by_3 = xtime(b) ^ b;
+    endfunction
+
+    integer i;
+    reg [7:0] s[0:15], m[0:15];
+
+    always @() begin
+        for (i = 0; i < 16; i = i + 1)
+            s[i] = in[127 - i*8 -: 8];
+
+        for (i = 0; i < 4; i = i + 1) begin
+            m[i*4+0] = xtime(s[i*4+0]) ^ mul_by_3(s[i*4+1]) ^ s[i*4+2] ^ s[i*4+3];
+            m[i*4+1] = s[i*4+0] ^ xtime(s[i*4+1]) ^ mul_by_3(s[i*4+2]) ^ s[i*4+3];
+            m[i*4+2] = s[i*4+0] ^ s[i*4+1] ^ xtime(s[i*4+2]) ^ mul_by_3(s[i*4+3]);
+            m[i*4+3] = mul_by_3(s[i*4+0]) ^ s[i*4+1] ^ s[i*4+2] ^ xtime(s[i*4+3]);
+        end
+    end
+
+    assign out = {m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7],
+                  m[8], m[9], m[10], m[11], m[12], m[13], m[14], m[15]};
+endmodule
